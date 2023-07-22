@@ -12,6 +12,9 @@ from transforms import *
 
 import byol_pytorch
 
+DEVICE = torch.device("cuda") if hasattr(torch, 'cuda') and torch.cuda.is_available() else torch.device("cpu")
+
+
 BASE_IDX = ['A', 'C', 'G', 'T']
 
 BASEMAP = {
@@ -85,7 +88,7 @@ def vectors_from_chunk(chunk, chunksize, stepsize, **kwargs):
 
 def vectorize_batch(batch):
     result = [torch.tensor(vectorize_onehot(b)) for b in batch]
-    return torch.stack(result, dim=0).float()
+    return torch.stack(result, dim=0).float().to(DEVICE)
 
 
 def make_batch(batchsize, bases):
@@ -112,7 +115,7 @@ def raw_batch(batchsize, seqlen):
 
 
 def train_byol():
-    net = DNAEnc(inlen=64)
+    net = DNAEnc(inlen=64).to(DEVICE)
 
     tr = SequentialTransform(
         transforms=[
@@ -134,7 +137,7 @@ def train_byol():
         augment_fn2=tr,
         projection_size=256, # Default 256
         projection_hidden_size=1024 # Default 4096
-    )
+    ).to(DEVICE)
 
     opt = torch.optim.Adam(net.parameters(), lr=0.0002)
 

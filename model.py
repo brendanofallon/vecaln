@@ -4,6 +4,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+DEVICE = torch.device("cuda") if hasattr(torch, 'cuda') and torch.cuda.is_available() else torch.device("cpu")
+
+
 class ConvBlock(torch.nn.Module):
 
     def __init__(self):

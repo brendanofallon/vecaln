@@ -1,0 +1,19 @@
+
+# Python 
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Pytest 
+.cache/
+.pytest_cache/
+
+# Jupyter Notebook 
+ipynb_checkpoints/
+
+# VS Code 
+.vscode/
+
+# Mac 
+.DS_Store

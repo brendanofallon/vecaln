@@ -41,8 +41,11 @@ class RotateTransform(DnaTransform):
 class SnpTransform(DnaTransform):
 
     def _transform_one(self, s, **kwargs):
-        j = random.randint(0, len(s)-1)
-        return s[0:j] + change_base(s[j]) + s[j+1:]
+        snpcount = random.choice([1,1,1,1,2,2,3,4])
+        for i in range(snpcount):
+            j = random.randint(0, len(s)-1)
+            s = s[0:j] + change_base(s[j]) + s[j+1:]
+        return s
 
 
 class InsTransform(DnaTransform):
@@ -51,22 +54,27 @@ class InsTransform(DnaTransform):
         self.max_len = max_len
 
     def _transform_one(self, s, **kwargs):
-        howmany = random.randint(self.min_len, self.max_len)
-        j = random.randint(0, len(s) - 1)
-        s2 = s[0:j] + random_bases(howmany) + s[j + 1:]
-        return s2[0:len(s)]
-
+        tcount = random.choice([1, 1, 1, 1, 2])
+        for i in range(tcount):
+            howmany = random.randint(self.min_len, self.max_len)
+            j = random.randint(0, len(s) - 1)
+            s2 = s[0:j] + random_bases(howmany) + s[j + 1:]
+            s = s2[0:len(s)]
+        return s
 
 class DelTransform(DnaTransform):
 
     def _transform_one(self, s, **kwargs):
-        minlen = kwargs.get('min_len', 1)
-        maxlen = kwargs.get('max_len', 4)
-        howmany = random.randint(minlen, maxlen)
-        newbases = random_bases(howmany)
-        j = random.randint(0, len(s) - 1)
-        s2 = s[0:j] + s[j + howmany:] + newbases
-        return s2[0:len(s)]
+        tcount = random.choice([1, 1, 1, 1, 2])
+        for i in range(tcount):
+            minlen = kwargs.get('min_len', 1)
+            maxlen = kwargs.get('max_len', 4)
+            howmany = random.randint(minlen, maxlen)
+            newbases = random_bases(howmany)
+            j = random.randint(0, len(s) - 1)
+            s2 = s[0:j] + s[j + howmany:] + newbases
+            s = s2[0:len(s)]
+        return s
 
 class PickTransform(DnaTransform):
     def __init__(self, transforms):

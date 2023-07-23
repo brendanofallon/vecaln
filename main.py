@@ -4,6 +4,7 @@ import itertools
 
 import torch
 from torch.optim import lr_scheduler
+import torch.nn.functional as F
 import numpy as np
 import faiss
 import pysam
@@ -33,7 +34,7 @@ BASE_ONEHOT={
 }
 
 #REF_PATH="/Users/brendanofallon/data/ref/human_g1k_v37_decoy_phiXAdaptr.fasta.gz"
-REF_PATH=os.getenv('REF_GENOME', "/home/brendan/Public/genomics/reference/human_g1k_v37_decoy_phiXAdaptr.fasta")
+REF_PATH=os.getenv('REF_GENOME', "/Users/brendanofallon/data/ref/human_g1k_v37_decoy_phiXAdaptr.fasta.gz")
 REF_GENOME=pysam.Fastafile(REF_PATH)
 
 
@@ -242,20 +243,49 @@ def build_index(index_dim, encoder, refpath, chrom, start, end, step, seq_len):
     return index, offsets
 
 
+def dist(x, y):
+    x = F.normalize(x, dim=-1, p=2)
+    y = F.normalize(y, dim=-1, p=2)
+    return 2 - 2 * (x * y).sum(dim=-1)
+
+
+def map_chunk(read, index, net, inlen=64):
+    readpos = [0, 25, 50, 75, 150-64]
+    with torch.no_grad():
+        subreads = vectorize_batch([read[i:i+inlen] for i in readpos])
+        emb = net(subreads).cpu().numpy()
+        dist, indices = index.search(emb, k=4)
+        print(dist)
+        print(indices)
+    return dist, indices
+
+
 def infer():
     sd = torch.load("vecaln_ep7000_nf2_proj1024.pyt", map_location='cpu')
     net = DNAEnc(inlen=64)
     net.load_state_dict(sd)
     net.eval()
-    idx, offsets = build_index(index_dim=64, encoder=net, refpath=REF_PATH, chrom="2", start=2000000, end=2010000, step=4, seq_len=64)
-    print(idx)
+    index, offsets = build_index(index_dim=128, encoder=net, refpath=REF_PATH, chrom="2", start=2000000, end=2001000, step=1, seq_len=64)
+    # print(idx)
 
-    query = REF_GENOME.fetch("2", 2001000, 2001064)
-    qb = vectorize_batch([query])
-    e = net(qb)
-    D, I = idx.search(e.detach().cpu().numpy(), k=4)
-    print(I)
-    print(D)
+    query = REF_GENOME.fetch("2", 2000100, 2000250)
+    query = SnpTransform()(query)
+    bigchunk = REF_GENOME.fetch("2", 2000000, 2000256)
+    d, i = map_chunk(query, index, net, inlen=64)
+
+
+    # for i in range(len(bigchunk)):
+    #     t = bigchunk[i:i+64]
+    #     vb = vectorize_batch([query, t])
+    #     emb = net(vb)
+    #
+    #     d = dist(emb[0, :], emb[1,:]).detach().numpy()
+    #     print(f"{i}: {d * 1e6 :.6f}")
+
+    # e = net(qb)
+    # D, I = idx.search(e.detach().cpu().numpy(), k=4)
+    # print(I)
+    # print(D)
 
 
 if __name__=="__main__":

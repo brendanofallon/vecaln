@@ -241,7 +241,7 @@ def build_index(index_dim, encoder, refpath, chrom, start, end, step, seq_len):
 
 
 def infer():
-    sd = torch.load("vecaln.pyt")
+    sd = torch.load("vecaln_ep7000_nf2_proj1024.pyt", map_location='cpu')
     net = DNAEnc(inlen=64)
     net.load_state_dict(sd)
     net.eval()
@@ -257,5 +257,5 @@ def infer():
 
 
 if __name__=="__main__":
-    train_byol()
-    # infer()
+    # train_byol()
+    infer()

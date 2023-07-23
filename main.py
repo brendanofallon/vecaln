@@ -1,4 +1,5 @@
 
+import os
 import itertools
 
 import torch
@@ -31,7 +32,8 @@ BASE_ONEHOT={
     'T': np.array([0, 0, 0, 1]),
 }
 
-REF_PATH="/Users/brendanofallon/data/ref/human_g1k_v37_decoy_phiXAdaptr.fasta.gz"
+#REF_PATH="/Users/brendanofallon/data/ref/human_g1k_v37_decoy_phiXAdaptr.fasta.gz"
+REF_PATH=os.getenv('REF_GENOME', "/home/brendan/Public/genomics/reference/human_g1k_v37_decoy_phiXAdaptr.fasta")
 REF_GENOME=pysam.Fastafile(REF_PATH)
 
 
@@ -135,7 +137,7 @@ def train_byol():
         augment_fn=vectorize_batch,
         hidden_layer=-1,
         augment_fn2=tr,
-        projection_size=256, # Default 256
+        projection_size=1024, # Default 256
         projection_hidden_size=1024 # Default 4096
     ).to(DEVICE)
 
@@ -159,7 +161,7 @@ def train_byol():
     s = net(snpst)
     # dsnp = byol_pytorch.loss_fn(o, s)
 
-    warmup_iters = 200
+    warmup_iters = 400
 
     lrsched = lr_scheduler.SequentialLR(
         opt,
@@ -201,9 +203,9 @@ def train_byol():
                 break
 
 
-        if t > 500 and t % 500 == 0:
+        if t > 500 and t % 1000 == 0:
             sd = net.state_dict()
-            dest = f"vecaln_ep{t}.pyt"
+            dest = f"vecaln_ep{t}_nf2_proj1024.pyt"
             print(f"Saving model to {dest}")
             torch.save(sd, dest)
 

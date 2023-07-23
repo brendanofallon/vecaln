@@ -256,5 +256,5 @@ class BYOL(nn.Module):
             npred = self.online_predictor(n1)
             neg_loss = loss_fn(online_pred_one, npred)
 
-        loss = loss_one + loss_two - negative_factor * neg_loss
+        loss = loss_one + loss_two + negative_factor * neg_loss
         return loss.mean()

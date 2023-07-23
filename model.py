@@ -33,7 +33,7 @@ class DNAEnc(torch.nn.Module):
     def __init__(self, inlen):
         super().__init__()
         self.conv = ConvBlock()
-        self.fc0 = nn.Linear(inlen, 128)
+        self.fc0 = nn.Linear(inlen, 64)
         #self.fc1 = nn.Linear(128, 128)
         # self.fc2 = nn.Linear(256, 256)
         self.fc_final = nn.Linear(4, 1)

@@ -122,7 +122,7 @@ def train_byol():
     tr = SequentialTransform(
         transforms=[
             PickTransform(transforms=[SnpTransform(), InsTransform(), DelTransform()]),
-            RotateTransform(min_len=2, max_len=12),
+            #RotateTransform(min_len=0, max_len=2),
             vectorize_batch,
         ])
 
@@ -205,7 +205,7 @@ def train_byol():
 
         if t > 500 and t % 1000 == 0:
             sd = net.state_dict()
-            dest = f"vecaln_ep{t}_nf2_proj1024.pyt"
+            dest = f"vecaln_ep{t}_nf2_proj1024_e64.pyt"
             print(f"Saving model to {dest}")
             torch.save(sd, dest)
 

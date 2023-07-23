@@ -1,6 +1,7 @@
 
 import os
 import itertools
+import random
 
 import torch
 from torch.optim import lr_scheduler
@@ -249,27 +250,41 @@ def dist(x, y):
     return 2 - 2 * (x * y).sum(dim=-1)
 
 
+def path_cost(path, rd, indices, scores):
+    if len(path) == 1:
+        return scores[path[0]]
+    steps = len(path)
+    scorecost = np.sum(scores[i, path[i]] for i in range(steps))
+    distcost = np.sum((rd[i-1] - (indices[i, path[i]] - indices[i-1, path[i-1]])) for i in range(1, steps))
+    return scorecost + distcost
+
+
 def map_chunk(read, index, net, inlen=64):
     readpos = [0, 25, 50, 75, 150-64]
     with torch.no_grad():
         subreads = vectorize_batch([read[i:i+inlen] for i in readpos])
         emb = net(subreads).cpu().numpy()
-        dist, indices = index.search(emb, k=4)
-        print(dist)
+        scores, indices = index.search(emb, k=4)
+        scores = scores * 1e7
+        print(scores)
         print(indices)
+
+        rd = np.array(readpos[1:]) - readpos[0]
+        cost = path_cost([0, 0, 2, 0], rd, indices, scores)
     return dist, indices
 
 
 def infer():
+    random.seed(13276)
     sd = torch.load("vecaln_ep7000_nf2_proj1024.pyt", map_location='cpu')
     net = DNAEnc(inlen=64)
     net.load_state_dict(sd)
     net.eval()
-    index, offsets = build_index(index_dim=128, encoder=net, refpath=REF_PATH, chrom="2", start=2000000, end=2001000, step=1, seq_len=64)
+    index, offsets = build_index(index_dim=128, encoder=net, refpath=REF_PATH, chrom="2", start=2000000, end=2050000, step=1, seq_len=64)
     # print(idx)
 
     query = REF_GENOME.fetch("2", 2000100, 2000250)
-    query = SnpTransform()(query)
+    query = DelTransform()(query)
     bigchunk = REF_GENOME.fetch("2", 2000000, 2000256)
     d, i = map_chunk(query, index, net, inlen=64)
 

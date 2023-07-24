@@ -178,7 +178,7 @@ def train_byol():
         seqs = raw_batch(256, 64)
         neg_examples = vectorize_batch(raw_batch(256, 64))
         # loss = byol(seqs, negative_examples=neg_examples, negative_factor=2.0)
-        loss = cont(seqs, neg_examples)
+        loss = cont(seqs, neg_examples, neg_factor=t/1000.0)
         opt.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)

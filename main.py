@@ -14,6 +14,7 @@ from model import DNAEnc
 from transforms import *
 
 import byol_pytorch
+import contrastive
 
 DEVICE = torch.device("cuda") if hasattr(torch, 'cuda') and torch.cuda.is_available() else torch.device("cpu")
 
@@ -133,15 +134,17 @@ def train_byol():
     pcount = sum(p.numel() for p in net.parameters())
     print(f"Model has {pcount} tot params")
 
-    byol = byol_pytorch.BYOL(
-        net=net,
-        seq_len=64,
-        augment_fn=vectorize_batch,
-        hidden_layer=-1,
-        augment_fn2=tr,
-        projection_size=1024, # Default 256
-        projection_hidden_size=1024 # Default 4096
-    ).to(DEVICE)
+    # byol = byol_pytorch.BYOL(
+    #     net=net,
+    #     seq_len=64,
+    #     augment_fn=vectorize_batch,
+    #     hidden_layer=-1,
+    #     augment_fn2=tr,
+    #     projection_size=1024, # Default 256
+    #     projection_hidden_size=1024 # Default 4096
+    # ).to(DEVICE)
+
+    cont = contrastive.Contrastive(model=net, transforms=vectorize_batch, augs=tr)
 
     opt = torch.optim.Adam(net.parameters(), lr=0.0002)
 
@@ -174,12 +177,13 @@ def train_byol():
     for t in range(10000):
         seqs = raw_batch(256, 64)
         neg_examples = vectorize_batch(raw_batch(256, 64))
-        loss = byol(seqs, negative_examples=neg_examples, negative_factor=2.0)
+        # loss = byol(seqs, negative_examples=neg_examples, negative_factor=2.0)
+        loss = cont(seqs, neg_examples)
         opt.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
         opt.step()
-        byol.update_moving_average()
+        # byol.update_moving_average()
         lrsched.step()
         if t % 50 == 0:
             pre = f"Step {t} lr: {lrsched.get_last_lr()[0] :.5f} loss: {loss.item() :.3f} "
@@ -276,11 +280,11 @@ def map_chunk(read, index, net, inlen=64):
 
 def infer():
     random.seed(13276)
-    sd = torch.load("vecaln_ep7000_nf2_proj1024.pyt", map_location='cpu')
+    sd = torch.load("vecaln_ep6000_nf2_proj1024_1d.pyt", map_location='cpu')
     net = DNAEnc(inlen=64)
     net.load_state_dict(sd)
     net.eval()
-    index, offsets = build_index(index_dim=128, encoder=net, refpath=REF_PATH, chrom="2", start=2000000, end=2050000, step=1, seq_len=64)
+    index, offsets = build_index(index_dim=32, encoder=net, refpath=REF_PATH, chrom="2", start=2000000, end=2050000, step=1, seq_len=64)
     # print(idx)
 
     query = REF_GENOME.fetch("2", 2000100, 2000250)
@@ -305,4 +309,4 @@ def infer():
 
 if __name__=="__main__":
     train_byol()
-    #infer()
+    # infer()
